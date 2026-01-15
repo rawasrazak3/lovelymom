@@ -16,14 +16,14 @@
         padding: 40px;
         background: white;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         text-align: center;
         transition: all 0.3s ease;
     }
 
     .prize-container:hover {
         transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
     }
 
     h1 {
@@ -98,7 +98,7 @@
         height: auto;
         border-radius: 10px;
         margin-top: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .confetti {
@@ -124,20 +124,42 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     /* Interactive Elements */
     .shake {
-        animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
     }
 
     @keyframes shake {
-        10%, 90% { transform: translate3d(-1px, 0, 0); }
-        20%, 80% { transform: translate3d(2px, 0, 0); }
-        30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-        40%, 60% { transform: translate3d(4px, 0, 0); }
+
+        10%,
+        90% {
+            transform: translate3d(-1px, 0, 0);
+        }
+
+        20%,
+        80% {
+            transform: translate3d(2px, 0, 0);
+        }
+
+        30%,
+        50%,
+        70% {
+            transform: translate3d(-4px, 0, 0);
+        }
+
+        40%,
+        60% {
+            transform: translate3d(4px, 0, 0);
+        }
     }
 </style>
 {% endblock %}
@@ -145,7 +167,17 @@
 {% block page_content %}
 <div class="prize-container animate__animated animate__fadeIn">
     <h1>Check Your Prize! 🎉</h1>
-    
+
+    <div class="input-group">
+        <input type="text" id="name-input" placeholder="Your Name" autocomplete="off">
+    </div>
+    <div class="input-group">
+        <input type="text" id="phone-input" placeholder="Phone Number" autocomplete="off">
+    </div>
+    <div class="input-group">
+        <input type="text" id="place-input" placeholder="Place" autocomplete="off">
+    </div>
+
     <div class="input-group">
         <input type="text" id="code-input" placeholder="Enter your unique code here..." autocomplete="off">
     </div>
@@ -153,7 +185,7 @@
     <button class="btn-check" onclick="checkPrize()">
         Check Now
     </button>
-    
+
     <div class="spinner" id="loading-spinner"></div>
 
     <div id="result-area" class="animate__animated">
@@ -171,6 +203,9 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script>
     function checkPrize() {
+        const name = document.getElementById('name-input').value.trim();
+        const phone = document.getElementById('phone-input').value.trim();
+        const place = document.getElementById('place-input').value.trim();
         const code = document.getElementById('code-input').value.trim();
         const resultArea = document.getElementById('result-area');
         const spinner = document.getElementById('loading-spinner');
@@ -179,10 +214,8 @@
         const imgContainer = document.getElementById('prize-img-container');
         const btn = document.querySelector('.btn-check');
 
-        if (!code) {
-            frappe.msgprint("Please enter a code!");
-            document.getElementById('code-input').classList.add('shake');
-            setTimeout(() => document.getElementById('code-input').classList.remove('shake'), 500);
+        if (!name || !phone || !place || !code) {
+            frappe.msgprint("Please fill in all fields!");
             return;
         }
 
@@ -196,22 +229,25 @@
         frappe.call({
             method: 'lovelymom.lovelymom.doctype.prize_code.prize_code.validate_code',
             args: {
+                usr_name: name,
+                usr_phone: phone,
+                usr_place: place,
                 code: code
             },
-            callback: function(r) {
+            callback: function (r) {
                 spinner.style.display = 'none';
                 btn.disabled = false;
                 resultArea.style.display = 'block';
 
                 if (r.message && r.message.status === 'success') {
                     const data = r.message;
-                    
+
                     if (data.result_type === 'Win') {
                         resultArea.classList.add('win');
                         resultArea.classList.remove('loss');
                         title.innerText = "Congratulations! You Won!";
                         msg.innerText = `You have won: ${data.prize}`;
-                        
+
                         if (data.image) {
                             imgContainer.innerHTML = `<img src="${data.image}" class="prize-image animate__animated animate__zoomIn">`;
                         }
@@ -235,7 +271,7 @@
 
                 } else {
                     // Error case (Invalid code, inactive, etc.)
-                   frappe.msgprint(r.message.message || "An error occurred");
+                    frappe.msgprint(r.message.message || "An error occurred");
                 }
             }
         });
